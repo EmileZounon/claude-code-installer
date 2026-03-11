@@ -1,6 +1,6 @@
 # Claude Code Installer
 
-Automated installer for [Claude Code](https://claude.ai/code) — sets up everything needed to start using Claude Code from your terminal and VS Code in one step.
+Automated installer for [Claude Code](https://claude.ai/code) - sets up everything needed to start using Claude Code from your terminal and VS Code in one step.
 
 ## What it installs
 
@@ -12,17 +12,17 @@ Automated installer for [Claude Code](https://claude.ai/code) — sets up everyt
 | VS Code extension | ✓ (if VS Code found) | ✓ (if VS Code found) |
 | Anthropic API key | ✓ (saved to shell profile) | ✓ (saved to env variables) |
 
-Already installed? The script detects existing components and skips them — you'll see a summary at the end of what was installed vs skipped.
+Already installed? The script detects existing components and skips them - you'll see a summary at the end of what was installed vs skipped.
 
 ---
 
-## Step 1 — Open your terminal
+## Step 1 - Open your terminal
 
 ### On macOS
 
 1. Press **Command (⌘) + Space** to open Spotlight Search
 2. Type **Terminal** and press **Enter**
-3. A black or white window will open — that's your terminal
+3. A black or white window will open - that's your terminal
 
 ### On Windows
 
@@ -30,13 +30,13 @@ Already installed? The script detects existing components and skips them — you
 2. Type **PowerShell**
 3. Right-click **Windows PowerShell** and select **"Run as administrator"**
 4. Click **Yes** when asked if you want to allow changes
-5. A blue window will open — that's PowerShell
+5. A blue window will open - that's PowerShell
 
 > **Why "Run as administrator"?** The installer needs permission to install software on your computer, just like any other installer you've used before.
 
 ---
 
-## Step 2 — Run the installer
+## Step 2 - Run the installer
 
 Copy the line below for your OS, paste it into the terminal window, and press **Enter**.
 
@@ -57,11 +57,11 @@ iwr -useb https://raw.githubusercontent.com/EmileZounon/claude-code-installer/ma
 > Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 > ```
 
-The installer will guide you through the rest — just follow the prompts on screen.
+The installer will guide you through the rest - just follow the prompts on screen.
 
 ---
 
-## Option 2 — Download and run manually
+## Option 2 - Download and run manually
 
 1. Download the file for your OS:
    - macOS: [`install.sh`](install.sh)
@@ -84,11 +84,11 @@ The installer will guide you through the rest — just follow the prompts on scr
 
 ## What happens during install
 
-1. **Checks for prerequisites** — Node.js, npm, VS Code
-2. **Installs missing tools** — Homebrew (macOS) or winget (Windows) used as package manager
+1. **Checks for prerequisites** - Node.js, npm, VS Code
+2. **Installs missing tools** - Homebrew (macOS) or winget (Windows) used as package manager
 3. **Installs Claude Code CLI** via npm
 4. **Installs the Claude VS Code extension** if VS Code is detected
-5. **Prompts for your Anthropic API key** — stored securely in your shell profile (macOS) or user environment variables (Windows). You can press Enter to skip and set it later.
+5. **Prompts for your Anthropic API key** - stored securely in your shell profile (macOS) or user environment variables (Windows). You can press Enter to skip and set it later.
 6. **Prints a summary** of everything installed or skipped
 
 ---
@@ -105,7 +105,7 @@ You're in. Start talking to Claude Code.
 
 ### Using with VS Code
 
-Open VS Code's integrated terminal (`Ctrl+`` ` or `Cmd+`` `) and run `claude` from there. Claude Code integrates with VS Code automatically — it can open files directly in your editor as you work.
+Open VS Code's integrated terminal (`Ctrl+`` ` or `Cmd+`` `) and run `claude` from there. Claude Code integrates with VS Code automatically - it can open files directly in your editor as you work.
 
 ---
 
@@ -115,12 +115,12 @@ Visit [console.anthropic.com/settings/keys](https://console.anthropic.com/settin
 
 If you skipped the key setup during install, add it manually:
 
-**macOS** — add to `~/.zshrc` or `~/.bash_profile`:
+**macOS** - add to `~/.zshrc` or `~/.bash_profile`:
 ```bash
 export ANTHROPIC_API_KEY="your-key-here"
 ```
 
-**Windows** — set as a user environment variable:
+**Windows** - set as a user environment variable:
 ```powershell
 [System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY", "your-key-here", "User")
 ```

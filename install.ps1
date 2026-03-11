@@ -1,4 +1,4 @@
-# Claude Code Installer — Windows
+# Claude Code Installer - Windows
 # Usage: iwr -useb https://raw.githubusercontent.com/YOUR_USERNAME/claude-code-installer/main/install.ps1 | iex
 # Requires: PowerShell 5.1+ and winget (pre-installed on Windows 10/11)
 
@@ -10,7 +10,7 @@ $Skipped   = @()
 function Write-Header {
     Write-Host ""
     Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║     Claude Code Installer — Windows      ║" -ForegroundColor Cyan
+    Write-Host "║     Claude Code Installer - Windows      ║" -ForegroundColor Cyan
     Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -41,7 +41,7 @@ if (-not (Test-Cmd "node")) {
     $Installed += "Node.js"
 } else {
     $nodeVer = node -v
-    Write-Host "⊘ Node.js $nodeVer already installed — skipping" -ForegroundColor Yellow
+    Write-Host "⊘ Node.js $nodeVer already installed - skipping" -ForegroundColor Yellow
     $Skipped += "Node.js $nodeVer"
 }
 
@@ -51,7 +51,7 @@ if (-not (Test-Cmd "claude")) {
     npm install -g @anthropic-ai/claude-code
     $Installed += "Claude Code CLI"
 } else {
-    Write-Host "⊘ Claude Code CLI already installed — skipping" -ForegroundColor Yellow
+    Write-Host "⊘ Claude Code CLI already installed - skipping" -ForegroundColor Yellow
     $Skipped += "Claude Code CLI"
 }
 
@@ -64,7 +64,7 @@ if (Test-Cmd "code") {
             Write-Host "✓ VS Code extension installed" -ForegroundColor Green
             $Installed += "VS Code extension"
         } else {
-            Write-Host "  Extension not found in marketplace — you can use Claude Code in VS Code's integrated terminal without it." -ForegroundColor Yellow
+            Write-Host "  Extension not found in marketplace - you can use Claude Code in VS Code's integrated terminal without it." -ForegroundColor Yellow
             $Skipped += "VS Code extension (install manually if needed)"
         }
     } catch {
@@ -72,7 +72,7 @@ if (Test-Cmd "code") {
         $Skipped += "VS Code extension (install manually if needed)"
     }
 } else {
-    Write-Host "⊘ VS Code not detected — skipping extension" -ForegroundColor Yellow
+    Write-Host "⊘ VS Code not detected - skipping extension" -ForegroundColor Yellow
     $Skipped += "VS Code extension (VS Code not found)"
 }
 
@@ -90,7 +90,7 @@ Write-Host ""
 $OpenBrowser = Read-Host "  Open that page in your browser now? [y/N]"
 if ($OpenBrowser -match "^[Yy]$") {
     Start-Process "https://console.anthropic.com/settings/keys"
-    Write-Host "  Browser opened — copy your key, then come back here."
+    Write-Host "  Browser opened - copy your key, then come back here."
     Write-Host ""
 }
 
@@ -105,7 +105,7 @@ if ($ApiKey -and $ApiKey.Length -gt 0) {
     Write-Host "✓ API key saved to user environment variables" -ForegroundColor Green
     $Installed += "API key → User environment variables"
 } else {
-    Write-Host "⊘ No API key entered — skipping" -ForegroundColor Yellow
+    Write-Host "⊘ No API key entered - skipping" -ForegroundColor Yellow
     $Skipped += "API key (set ANTHROPIC_API_KEY manually)"
 }
 

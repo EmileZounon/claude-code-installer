@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Claude Code Installer — macOS
+# Claude Code Installer - macOS
 # Usage: curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/claude-code-installer/main/install.sh | bash
 
 set -e
@@ -17,13 +17,13 @@ SKIPPED=()
 print_header() {
   echo ""
   echo -e "${BOLD}╔══════════════════════════════════════════╗${NC}"
-  echo -e "${BOLD}║     Claude Code Installer — macOS        ║${NC}"
+  echo -e "${BOLD}║     Claude Code Installer - macOS        ║${NC}"
   echo -e "${BOLD}╚══════════════════════════════════════════╝${NC}"
   echo ""
 }
 
 print_step() { echo -e "${BLUE}▶ $1${NC}"; }
-print_skip() { echo -e "${YELLOW}⊘ $1 — skipping${NC}"; }
+print_skip() { echo -e "${YELLOW}⊘ $1 - skipping${NC}"; }
 print_ok()   { echo -e "${GREEN}✓ $1${NC}"; }
 print_err()  { echo -e "${RED}✗ $1${NC}"; }
 
@@ -72,11 +72,11 @@ if command -v code &>/dev/null; then
   if code --install-extension anthropic.claude-code 2>/dev/null; then
     INSTALLED+=("VS Code extension")
   else
-    echo -e "${YELLOW}  Extension not found in marketplace — you can use Claude Code in VS Code's integrated terminal without it.${NC}"
+    echo -e "${YELLOW}  Extension not found in marketplace - you can use Claude Code in VS Code's integrated terminal without it.${NC}"
     SKIPPED+=("VS Code extension (install manually if needed)")
   fi
 else
-  print_skip "VS Code not detected — skipping extension"
+  print_skip "VS Code not detected - skipping extension"
   SKIPPED+=("VS Code extension (VS Code not found)")
 fi
 
@@ -95,7 +95,7 @@ echo -n "  Open that page in your browser now? [y/N]: "
 read -r OPEN_BROWSER
 if [[ "$OPEN_BROWSER" =~ ^[Yy]$ ]]; then
   open "https://console.anthropic.com/settings/keys"
-  echo "  Browser opened — copy your key, then come back here."
+  echo "  Browser opened - copy your key, then come back here."
   echo ""
 fi
 echo -n "  Paste your API key here (input hidden, press Enter to skip): "
