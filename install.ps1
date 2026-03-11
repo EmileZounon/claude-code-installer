@@ -79,9 +79,22 @@ if (Test-Cmd "code") {
 # ── API Key ───────────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "▶ Anthropic API Key Setup" -ForegroundColor Blue
-Write-Host "  Get your key at: https://console.anthropic.com/settings/keys"
+Write-Host ""
+Write-Host "  An API key lets Claude Code talk to Anthropic's AI."
+Write-Host ""
+Write-Host "  To get one:"
+Write-Host "    1. Go to https://console.anthropic.com/settings/keys"
+Write-Host "    2. Sign up or log in (free account works)"
+Write-Host "    3. Click 'Create Key', give it a name, copy the key"
+Write-Host ""
+$OpenBrowser = Read-Host "  Open that page in your browser now? [y/N]"
+if ($OpenBrowser -match "^[Yy]$") {
+    Start-Process "https://console.anthropic.com/settings/keys"
+    Write-Host "  Browser opened — copy your key, then come back here."
+    Write-Host ""
+}
 
-$SecureKey = Read-Host "  Enter your API key (press Enter to skip)" -AsSecureString
+$SecureKey = Read-Host "  Paste your API key here (press Enter to skip)" -AsSecureString
 $ApiKey = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
     [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureKey)
 )

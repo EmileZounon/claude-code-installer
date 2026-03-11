@@ -83,8 +83,22 @@ fi
 # ── API Key ───────────────────────────────────────────────────────────────────
 echo ""
 print_step "Anthropic API Key Setup"
-echo "  Get your key at: https://console.anthropic.com/settings/keys"
-echo -n "  Enter your API key (input hidden, press Enter to skip): "
+echo ""
+echo "  An API key lets Claude Code talk to Anthropic's AI."
+echo ""
+echo "  To get one:"
+echo "    1. Go to https://console.anthropic.com/settings/keys"
+echo "    2. Sign up or log in (free account works)"
+echo "    3. Click 'Create Key', give it a name, copy the key"
+echo ""
+echo -n "  Open that page in your browser now? [y/N]: "
+read -r OPEN_BROWSER
+if [[ "$OPEN_BROWSER" =~ ^[Yy]$ ]]; then
+  open "https://console.anthropic.com/settings/keys"
+  echo "  Browser opened — copy your key, then come back here."
+  echo ""
+fi
+echo -n "  Paste your API key here (input hidden, press Enter to skip): "
 read -rs API_KEY
 echo ""
 
