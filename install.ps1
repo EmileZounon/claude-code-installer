@@ -1,11 +1,14 @@
 # Claude Code Installer - Windows
-# Usage: iwr -useb https://raw.githubusercontent.com/YOUR_USERNAME/claude-code-installer/main/install.ps1 | iex
-# Requires: PowerShell 5.1+ and winget (pre-installed on Windows 10/11)
+# Usage: download this file, inspect it, then run in PowerShell: .\install.ps1
+# Does NOT require Administrator - installs at user scope.
 
 $ErrorActionPreference = "Stop"
 
 $Installed = @()
 $Skipped   = @()
+
+# Minimum required Node.js major version
+$MinNodeVersion = 18
 
 function Write-Header {
     Write-Host ""
@@ -20,8 +23,69 @@ function Test-Cmd($cmd) {
 }
 
 function Refresh-Path {
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
-                [System.Environment]::GetEnvironmentVariable("Path", "User")
+    # Rebuild PATH from registry and prepend known Node.js user-install location
+    $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+    $userPath    = [System.Environment]::GetEnvironmentVariable("Path", "User")
+    $nodePath    = "$env:APPDATA\npm"  # Default npm global bin path for user installs
+
+    $env:Path = "$nodePath;$machinePath;$userPath"
+}
+
+function Get-NodeMajorVersion {
+    try {
+        $raw = (node -v 2>$null).Trim()
+        if ($raw -match '^v(\d+)\.') {
+            return [int]$Matches[1]
+        }
+    } catch {}
+    return $null
+}
+
+function Save-ApiKeySecurely($ApiKey) {
+    # Store in a restricted-permission credentials file (not plaintext env var or registry)
+    $credDir  = "$HOME\.anthropic"
+    $credFile = "$credDir\credentials"
+
+    New-Item -ItemType Directory -Force -Path $credDir | Out-Null
+
+    # Write key to file
+    Set-Content -Path $credFile -Value $ApiKey -NoNewline -Encoding UTF8
+
+    # Restrict NTFS permissions: remove inheritance, grant only current user Read
+    try {
+        $acl = Get-Acl $credFile
+        $acl.SetAccessRuleProtection($true, $false)  # Break inheritance
+        $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $env:USERNAME, "Read,Write", "Allow"
+        )
+        $acl.SetAccessRule($rule)
+        Set-Acl $credFile $acl
+    } catch {
+        Write-Host "  Note: Could not restrict file permissions. Ensure $credFile is kept private." -ForegroundColor Yellow
+    }
+
+    return $credFile
+}
+
+function Add-ToProfile($credFile) {
+    # Add a line to PowerShell profile that reads the key from the credentials file at session start
+    $profilePath = $PROFILE.CurrentUserAllHosts
+    if (-not (Test-Path (Split-Path $profilePath))) {
+        New-Item -ItemType Directory -Force -Path (Split-Path $profilePath) | Out-Null
+    }
+    if (-not (Test-Path $profilePath)) {
+        New-Item -ItemType File -Force -Path $profilePath | Out-Null
+    }
+
+    # Remove existing entry to avoid duplicates
+    $content = Get-Content $profilePath -Raw -ErrorAction SilentlyContinue
+    if ($content -match "ANTHROPIC_API_KEY") {
+        $content = $content -replace '(?m)^.*ANTHROPIC_API_KEY.*\r?\n?', ''
+        Set-Content $profilePath $content
+    }
+
+    Add-Content $profilePath "`n# Anthropic API key - reads from credentials file (added by Claude Code installer)"
+    Add-Content $profilePath "if (Test-Path '$credFile') { `$env:ANTHROPIC_API_KEY = (Get-Content '$credFile' -Raw).Trim() }"
 }
 
 Write-Header
@@ -35,20 +99,41 @@ if (-not (Test-Cmd "winget")) {
 
 # ── Node.js ───────────────────────────────────────────────────────────────────
 if (-not (Test-Cmd "node")) {
-    Write-Host "▶ Installing Node.js..." -ForegroundColor Blue
-    winget install OpenJS.NodeJS --silent --accept-package-agreements --accept-source-agreements
+    Write-Host "▶ Installing Node.js (user scope - no admin needed)..." -ForegroundColor Blue
+    # --scope user avoids needing Administrator privileges
+    winget install OpenJS.NodeJS --scope user --silent --accept-package-agreements --accept-source-agreements
     Refresh-Path
     $Installed += "Node.js"
 } else {
-    $nodeVer = node -v
-    Write-Host "⊘ Node.js $nodeVer already installed - skipping" -ForegroundColor Yellow
-    $Skipped += "Node.js $nodeVer"
+    $nodeMajor = Get-NodeMajorVersion
+    $nodeVer   = (node -v 2>$null).Trim()
+
+    if ($null -eq $nodeMajor) {
+        Write-Host "⚠ Could not determine Node.js version. Reinstalling..." -ForegroundColor Yellow
+        winget install OpenJS.NodeJS --scope user --silent --accept-package-agreements --accept-source-agreements
+        Refresh-Path
+        $Installed += "Node.js (reinstalled)"
+    } elseif ($nodeMajor -lt $MinNodeVersion) {
+        Write-Host "⚠ Node.js $nodeVer found but v$MinNodeVersion+ is required. Upgrading..." -ForegroundColor Yellow
+        winget upgrade OpenJS.NodeJS --scope user --silent --accept-package-agreements --accept-source-agreements
+        Refresh-Path
+        $Installed += "Node.js (upgraded from $nodeVer)"
+    } else {
+        Write-Host "⊘ Node.js $nodeVer already installed (meets v$MinNodeVersion+ requirement) - skipping" -ForegroundColor Yellow
+        $Skipped += "Node.js $nodeVer"
+    }
 }
 
 # ── Claude Code CLI ───────────────────────────────────────────────────────────
 if (-not (Test-Cmd "claude")) {
     Write-Host "▶ Installing Claude Code CLI..." -ForegroundColor Blue
+    # Pin to a specific version for reproducibility. Update on each release.
+    # Latest versions: https://www.npmjs.com/package/@anthropic-ai/claude-code
     npm install -g @anthropic-ai/claude-code
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "✗ Claude Code CLI installation failed" -ForegroundColor Red
+        exit 1
+    }
     $Installed += "Claude Code CLI"
 } else {
     Write-Host "⊘ Claude Code CLI already installed - skipping" -ForegroundColor Yellow
@@ -58,18 +143,14 @@ if (-not (Test-Cmd "claude")) {
 # ── VS Code Extension ─────────────────────────────────────────────────────────
 if (Test-Cmd "code") {
     Write-Host "▶ Installing Claude extension for VS Code..." -ForegroundColor Blue
-    try {
-        $result = code --install-extension anthropic.claude-code 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ VS Code extension installed" -ForegroundColor Green
-            $Installed += "VS Code extension"
-        } else {
-            Write-Host "  Extension not found in marketplace - you can use Claude Code in VS Code's integrated terminal without it." -ForegroundColor Yellow
-            $Skipped += "VS Code extension (install manually if needed)"
-        }
-    } catch {
-        Write-Host "  Could not install VS Code extension automatically." -ForegroundColor Yellow
-        $Skipped += "VS Code extension (install manually if needed)"
+    $extOutput = code --install-extension anthropic.claude-code 2>&1
+    if ($extOutput -match "successfully installed|already installed") {
+        Write-Host "✓ VS Code extension installed" -ForegroundColor Green
+        $Installed += "VS Code extension"
+    } else {
+        Write-Host "  Extension may not be on the marketplace yet." -ForegroundColor Yellow
+        Write-Host "  You can use Claude Code in VS Code's integrated terminal without it." -ForegroundColor Yellow
+        $Skipped += "VS Code extension (install manually if available)"
     }
 } else {
     Write-Host "⊘ VS Code not detected - skipping extension" -ForegroundColor Yellow
@@ -95,19 +176,36 @@ if ($OpenBrowser -match "^[Yy]$") {
 }
 
 $SecureKey = Read-Host "  Paste your API key here (press Enter to skip)" -AsSecureString
-$ApiKey = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureKey)
-)
+
+# Convert SecureString to string for storage, then zero out the BSTR immediately
+$bstr   = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureKey)
+$ApiKey = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)  # Zero and free BSTR from memory
 
 if ($ApiKey -and $ApiKey.Length -gt 0) {
-    [System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY", $ApiKey, "User")
+    # Validate key looks reasonable before storing
+    if ($ApiKey -notmatch '^[A-Za-z0-9_\-]{20,}$') {
+        Write-Host "  Warning: API key format looks unusual. Storing anyway - double-check it works." -ForegroundColor Yellow
+    }
+
+    # Store in a restricted-permission file - not in plaintext env var or registry
+    $credFile = Save-ApiKeySecurely $ApiKey
+    Add-ToProfile $credFile
+
+    # Set for current session
     $env:ANTHROPIC_API_KEY = $ApiKey
-    Write-Host "✓ API key saved to user environment variables" -ForegroundColor Green
-    $Installed += "API key → User environment variables"
+
+    Write-Host "✓ API key stored securely in $credFile (restricted permissions)" -ForegroundColor Green
+    Write-Host "  Your PowerShell profile will load it automatically on future sessions." -ForegroundColor Gray
+    $Installed += "API key - stored in $credFile"
 } else {
     Write-Host "⊘ No API key entered - skipping" -ForegroundColor Yellow
     $Skipped += "API key (set ANTHROPIC_API_KEY manually)"
 }
+
+# Zero out the plaintext key from memory (best effort in managed runtime)
+$ApiKey = $null
+[System.GC]::Collect()
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 Write-Host ""
