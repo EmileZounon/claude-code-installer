@@ -21,13 +21,13 @@ Already installed? The script detects existing components and skips them — you
 ### macOS
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/claude-code-installer/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/EmileZounon/claude-code-installer/main/install.sh | bash
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-iwr -useb https://raw.githubusercontent.com/YOUR_USERNAME/claude-code-installer/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/EmileZounon/claude-code-installer/main/install.ps1 | iex
 ```
 
 > **Windows note:** Run PowerShell as Administrator for best results. If you see an execution policy error, run this first:
