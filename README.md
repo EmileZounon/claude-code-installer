@@ -137,6 +137,13 @@ export ANTHROPIC_API_KEY="your-key-here"
 
 ---
 
+## Contributors
+
+- [Emile Zounon](https://github.com/EmileZounon)
+- [Claude](https://claude.ai) (Anthropic)
+
+---
+
 ## Build Log
 
 | | |
