@@ -39,8 +39,8 @@ Already installed? The script detects existing components and skips them - you'l
 
 Download the file for your OS and save it somewhere easy to find (like your Desktop):
 
-- **macOS:** [Download install.sh](https://github.com/EmileZounon/claude-code-installer/raw/main/install.sh)
-- **Windows:** [Download install.ps1](https://github.com/EmileZounon/claude-code-installer/raw/main/install.ps1)
+- **macOS:** [Download install.sh](https://github.com/EmileZounon/claude-code-installer/releases/download/v1.0.0/install.sh)
+- **Windows:** [Download install.ps1](https://github.com/EmileZounon/claude-code-installer/releases/download/v1.0.0/install.ps1)
 
 > **Why download instead of copy-paste?** Downloading lets you open the file and read what it does before running it. Always a good habit with installers.
 
