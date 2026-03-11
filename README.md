@@ -16,7 +16,29 @@ Already installed? The script detects existing components and skips them — you
 
 ---
 
-## Option 1 — One-liner (paste in terminal)
+## Step 1 — Open your terminal
+
+### On macOS
+
+1. Press **Command (⌘) + Space** to open Spotlight Search
+2. Type **Terminal** and press **Enter**
+3. A black or white window will open — that's your terminal
+
+### On Windows
+
+1. Click the **Start menu** (Windows icon, bottom-left of your screen)
+2. Type **PowerShell**
+3. Right-click **Windows PowerShell** and select **"Run as administrator"**
+4. Click **Yes** when asked if you want to allow changes
+5. A blue window will open — that's PowerShell
+
+> **Why "Run as administrator"?** The installer needs permission to install software on your computer, just like any other installer you've used before.
+
+---
+
+## Step 2 — Run the installer
+
+Copy the line below for your OS, paste it into the terminal window, and press **Enter**.
 
 ### macOS
 
@@ -30,10 +52,12 @@ curl -fsSL https://raw.githubusercontent.com/EmileZounon/claude-code-installer/m
 iwr -useb https://raw.githubusercontent.com/EmileZounon/claude-code-installer/main/install.ps1 | iex
 ```
 
-> **Windows note:** Run PowerShell as Administrator for best results. If you see an execution policy error, run this first:
+> **If you see an error about "execution policy" on Windows**, paste this first and press Enter, then run the line above again:
 > ```powershell
 > Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 > ```
+
+The installer will guide you through the rest — just follow the prompts on screen.
 
 ---
 
