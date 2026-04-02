@@ -1,16 +1,14 @@
 # Claude Code Installer
 
-Automated installer for [Claude Code](https://claude.ai/code) - sets up everything needed to start using Claude Code from your terminal and VS Code in one step.
+Automated installer for [Claude Code](https://claude.ai/code) - sets up Claude Code CLI, VS Code extension, and optional API key in one step.
 
 ## What it installs
 
 | Component | macOS | Windows |
 |---|---|---|
-| Homebrew / winget | (if missing) | pre-required |
-| Node.js | yes | yes |
-| Claude Code CLI | yes | yes |
+| Claude Code CLI | native installer (auto-updates) | winget (or native installer) |
 | VS Code extension | yes (if VS Code found) | yes (if VS Code found) |
-| Anthropic API key | stored in macOS Keychain | stored in protected file |
+| Anthropic API key | stored in macOS Keychain (optional) | stored in protected file (optional) |
 
 Already installed? The script detects existing components and skips them - you'll see a summary at the end of what was installed vs skipped.
 
@@ -39,8 +37,8 @@ Already installed? The script detects existing components and skips them - you'l
 
 Download the file for your OS and save it somewhere easy to find (like your Desktop):
 
-- **macOS:** [Download install.sh](https://github.com/EmileZounon/claude-code-installer/releases/download/v1.0.0/install.sh)
-- **Windows:** [Download install.ps1](https://github.com/EmileZounon/claude-code-installer/releases/download/v1.0.0/install.ps1)
+- **macOS:** [Download install.sh](https://github.com/EmileZounon/claude-code-installer/releases/download/v2.0.0/install.sh)
+- **Windows:** [Download install.ps1](https://github.com/EmileZounon/claude-code-installer/releases/download/v2.0.0/install.ps1)
 
 > **Why download instead of copy-paste?** Downloading lets you open the file and read what it does before running it. Always a good habit with installers.
 
@@ -76,13 +74,10 @@ The installer will guide you through the rest - just follow the prompts on scree
 
 ## What happens during install
 
-1. **Checks for prerequisites** - Node.js, npm, VS Code
-2. **Installs missing tools** - Homebrew (macOS) or winget (Windows) used as package manager
-3. **Checks Node.js version** - upgrades automatically if below minimum (v18)
-4. **Installs Claude Code CLI** via npm
-5. **Installs the Claude VS Code extension** if VS Code is detected
-6. **Prompts for your Anthropic API key** - stored securely in macOS Keychain (macOS) or a restricted file (Windows). Never written in plaintext to your shell profile.
-7. **Prints a summary** of everything installed or skipped
+1. **Installs Claude Code CLI** using the official native installer (macOS) or winget (Windows) - no Node.js or npm required
+2. **Installs the Claude VS Code extension** if VS Code is detected
+3. **Offers optional API key setup** - most users authenticate via browser instead (see below)
+4. **Prints a summary** of everything installed or skipped
 
 ---
 
@@ -94,7 +89,9 @@ Open a **new terminal window** and run:
 claude
 ```
 
-You're in. Start talking to Claude Code.
+Your browser will open to log in with your Claude account (Pro, Max, Teams, or Enterprise). That's it.
+
+Claude Code auto-updates in the background - no maintenance required.
 
 ### Using with VS Code
 
@@ -102,13 +99,11 @@ Open VS Code's integrated terminal (Ctrl + backtick or Cmd + backtick) and run `
 
 ---
 
-## Get your API key
+## API key setup (optional)
 
-Visit [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) to create or retrieve your key.
+Most users authenticate through their browser when they first run `claude`. An API key is only needed if you're using Claude Code with direct API access.
 
-The installer will offer to open this page for you and walk you through the setup.
-
-If you skipped the key setup during install, set it manually:
+The installer offers to set this up for you. If you skipped it during install, set it manually:
 
 **macOS** - store in Keychain then add to your shell profile:
 ```bash
@@ -126,15 +121,17 @@ Then add this to your PowerShell profile (`$PROFILE`):
 $env:ANTHROPIC_API_KEY = (Get-Content "$HOME\.anthropic\credentials" -Raw).Trim()
 ```
 
+Visit [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) to create or retrieve your key.
+
 ---
 
 ## Requirements
 
 | | macOS | Windows |
 |---|---|---|
-| OS version | macOS 12+ | Windows 10/11 |
+| OS version | macOS 13+ | Windows 10 1809+ |
 | Shell | zsh or bash | PowerShell 5.1+ |
-| Package manager | Homebrew (auto-installed) | winget (built into Windows 10/11) |
+| Other | | [Git for Windows](https://git-scm.com/downloads/win) |
 
 ---
 
@@ -149,6 +146,6 @@ $env:ANTHROPIC_API_KEY = (Get-Content "$HOME\.anthropic\credentials" -Raw).Trim(
 
 | | |
 |---|---|
-| Start | 2026-03-10 |
-| End | 2026-03-10 |
-| Model | Claude Sonnet 4.6 |
+| v1.0 | 2026-03-10 (npm-based install) |
+| v2.0 | 2026-04-02 (native installer, browser auth) |
+| Model | Claude Sonnet 4.6, Claude Opus 4.6 |

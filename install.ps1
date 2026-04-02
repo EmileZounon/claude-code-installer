@@ -7,9 +7,6 @@ $ErrorActionPreference = "Stop"
 $Installed = @()
 $Skipped   = @()
 
-# Minimum required Node.js major version
-$MinNodeVersion = 18
-
 function Write-Header {
     Write-Host ""
     Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Cyan
@@ -20,25 +17,6 @@ function Write-Header {
 
 function Test-Cmd($cmd) {
     return [bool](Get-Command $cmd -ErrorAction SilentlyContinue)
-}
-
-function Refresh-Path {
-    # Rebuild PATH from registry and prepend known Node.js user-install location
-    $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-    $userPath    = [System.Environment]::GetEnvironmentVariable("Path", "User")
-    $nodePath    = "$env:APPDATA\npm"  # Default npm global bin path for user installs
-
-    $env:Path = "$nodePath;$machinePath;$userPath"
-}
-
-function Get-NodeMajorVersion {
-    try {
-        $raw = (node -v 2>$null).Trim()
-        if ($raw -match '^v(\d+)\.') {
-            return [int]$Matches[1]
-        }
-    } catch {}
-    return $null
 }
 
 function Save-ApiKeySecurely($ApiKey) {
@@ -90,54 +68,35 @@ function Add-ToProfile($credFile) {
 
 Write-Header
 
-# ── winget check ──────────────────────────────────────────────────────────────
-if (-not (Test-Cmd "winget")) {
-    Write-Host "✗ winget not found. Install 'App Installer' from the Microsoft Store, then re-run." -ForegroundColor Red
-    Write-Host "  https://aka.ms/getwinget" -ForegroundColor Gray
-    exit 1
+# ── Prerequisites ────────────────────────────────────────────────────────────
+# Git for Windows is required by Claude Code on Windows
+if (-not (Test-Cmd "git")) {
+    Write-Host "⚠ Git for Windows not found. Claude Code requires it on Windows." -ForegroundColor Yellow
+    Write-Host "  Install from: https://git-scm.com/downloads/win" -ForegroundColor Gray
+    Write-Host ""
 }
 
-# ── Node.js ───────────────────────────────────────────────────────────────────
-if (-not (Test-Cmd "node")) {
-    Write-Host "▶ Installing Node.js (user scope - no admin needed)..." -ForegroundColor Blue
-    # --scope user avoids needing Administrator privileges
-    winget install OpenJS.NodeJS --scope user --silent --accept-package-agreements --accept-source-agreements
-    Refresh-Path
-    $Installed += "Node.js"
+# ── Claude Code CLI ──────────────────────────────────────────────────────────
+if (Test-Cmd "claude") {
+    $ver = claude --version 2>$null
+    Write-Host "⊘ Claude Code CLI already installed ($ver) - skipping" -ForegroundColor Yellow
+    $Skipped += "Claude Code CLI ($ver)"
 } else {
-    $nodeMajor = Get-NodeMajorVersion
-    $nodeVer   = (node -v 2>$null).Trim()
-
-    if ($null -eq $nodeMajor) {
-        Write-Host "⚠ Could not determine Node.js version. Reinstalling..." -ForegroundColor Yellow
-        winget install OpenJS.NodeJS --scope user --silent --accept-package-agreements --accept-source-agreements
-        Refresh-Path
-        $Installed += "Node.js (reinstalled)"
-    } elseif ($nodeMajor -lt $MinNodeVersion) {
-        Write-Host "⚠ Node.js $nodeVer found but v$MinNodeVersion+ is required. Upgrading..." -ForegroundColor Yellow
-        winget upgrade OpenJS.NodeJS --scope user --silent --accept-package-agreements --accept-source-agreements
-        Refresh-Path
-        $Installed += "Node.js (upgraded from $nodeVer)"
+    if (Test-Cmd "winget") {
+        # winget is the cleanest install path on Windows
+        Write-Host "▶ Installing Claude Code via winget..." -ForegroundColor Blue
+        winget install Anthropic.ClaudeCode --accept-package-agreements --accept-source-agreements
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "✗ Claude Code installation via winget failed" -ForegroundColor Red
+            exit 1
+        }
+        $Installed += "Claude Code CLI (via winget)"
     } else {
-        Write-Host "⊘ Node.js $nodeVer already installed (meets v$MinNodeVersion+ requirement) - skipping" -ForegroundColor Yellow
-        $Skipped += "Node.js $nodeVer"
+        # Fallback to native installer if winget is not available
+        Write-Host "▶ Installing Claude Code via native installer..." -ForegroundColor Blue
+        Invoke-Expression (Invoke-RestMethod https://claude.ai/install.ps1)
+        $Installed += "Claude Code CLI (native installer)"
     }
-}
-
-# ── Claude Code CLI ───────────────────────────────────────────────────────────
-if (-not (Test-Cmd "claude")) {
-    Write-Host "▶ Installing Claude Code CLI..." -ForegroundColor Blue
-    # Pin to a specific version for reproducibility. Update on each release.
-    # Latest versions: https://www.npmjs.com/package/@anthropic-ai/claude-code
-    npm install -g @anthropic-ai/claude-code
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "✗ Claude Code CLI installation failed" -ForegroundColor Red
-        exit 1
-    }
-    $Installed += "Claude Code CLI"
-} else {
-    Write-Host "⊘ Claude Code CLI already installed - skipping" -ForegroundColor Yellow
-    $Skipped += "Claude Code CLI"
 }
 
 # ── VS Code Extension ─────────────────────────────────────────────────────────
@@ -157,55 +116,69 @@ if (Test-Cmd "code") {
     $Skipped += "VS Code extension (VS Code not found)"
 }
 
-# ── API Key ───────────────────────────────────────────────────────────────────
+# ── Authentication ───────────────────────────────────────────────────────────
 Write-Host ""
-Write-Host "▶ Anthropic API Key Setup" -ForegroundColor Blue
+Write-Host "▶ Authentication" -ForegroundColor Blue
 Write-Host ""
-Write-Host "  An API key lets Claude Code talk to Anthropic's AI."
+Write-Host "  Claude Code authenticates through your browser."
+Write-Host "  When you first run 'claude', it will open a browser window"
+Write-Host "  to log in with your Claude account (Pro, Max, Teams, or Enterprise)."
 Write-Host ""
-Write-Host "  To get one:"
-Write-Host "    1. Go to https://console.anthropic.com/settings/keys"
-Write-Host "    2. Sign up or log in (free account works)"
-Write-Host "    3. Click 'Create Key', give it a name, copy the key"
+Write-Host "  ┌─────────────────────────────────────────────────────────┐"
+Write-Host "  │  Optional: API key setup                                │"
+Write-Host "  │                                                         │"
+Write-Host "  │  If you prefer to use an Anthropic API key instead,     │"
+Write-Host "  │  the installer can set that up for you.                 │"
+Write-Host "  │                                                         │"
+Write-Host "  │  Get a key: console.anthropic.com/settings/keys         │"
+Write-Host "  └─────────────────────────────────────────────────────────┘"
 Write-Host ""
-$OpenBrowser = Read-Host "  Open that page in your browser now? [y/N]"
-if ($OpenBrowser -match "^[Yy]$") {
-    Start-Process "https://console.anthropic.com/settings/keys"
-    Write-Host "  Browser opened - copy your key, then come back here."
+$SetupKey = Read-Host "  Set up an API key? (most users can skip this) [y/N]"
+
+if ($SetupKey -match "^[Yy]$") {
     Write-Host ""
-}
-
-$SecureKey = Read-Host "  Paste your API key here (press Enter to skip)" -AsSecureString
-
-# Convert SecureString to string for storage, then zero out the BSTR immediately
-$bstr   = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureKey)
-$ApiKey = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
-[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)  # Zero and free BSTR from memory
-
-if ($ApiKey -and $ApiKey.Length -gt 0) {
-    # Validate key looks reasonable before storing
-    if ($ApiKey -notmatch '^[A-Za-z0-9_\-]{20,}$') {
-        Write-Host "  Warning: API key format looks unusual. Storing anyway - double-check it works." -ForegroundColor Yellow
+    $OpenBrowser = Read-Host "  Open the API key page in your browser? [y/N]"
+    if ($OpenBrowser -match "^[Yy]$") {
+        Start-Process "https://console.anthropic.com/settings/keys"
+        Write-Host "  Browser opened - copy your key, then come back here."
+        Write-Host ""
     }
 
-    # Store in a restricted-permission file - not in plaintext env var or registry
-    $credFile = Save-ApiKeySecurely $ApiKey
-    Add-ToProfile $credFile
+    $SecureKey = Read-Host "  Paste your API key here (press Enter to skip)" -AsSecureString
 
-    # Set for current session
-    $env:ANTHROPIC_API_KEY = $ApiKey
+    # Convert SecureString to string for storage, then zero out the BSTR immediately
+    $bstr   = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureKey)
+    $ApiKey = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)  # Zero and free BSTR from memory
 
-    Write-Host "✓ API key stored securely in $credFile (restricted permissions)" -ForegroundColor Green
-    Write-Host "  Your PowerShell profile will load it automatically on future sessions." -ForegroundColor Gray
-    $Installed += "API key - stored in $credFile"
+    if ($ApiKey -and $ApiKey.Length -gt 0) {
+        # Validate key looks reasonable before storing
+        if ($ApiKey -notmatch '^[A-Za-z0-9_\-]{20,}$') {
+            Write-Host "  Warning: API key format looks unusual. Storing anyway - double-check it works." -ForegroundColor Yellow
+        }
+
+        # Store in a restricted-permission file - not in plaintext env var or registry
+        $credFile = Save-ApiKeySecurely $ApiKey
+        Add-ToProfile $credFile
+
+        # Set for current session
+        $env:ANTHROPIC_API_KEY = $ApiKey
+
+        Write-Host "✓ API key stored securely in $credFile (restricted permissions)" -ForegroundColor Green
+        Write-Host "  Your PowerShell profile will load it automatically on future sessions." -ForegroundColor Gray
+        $Installed += "API key - stored in $credFile"
+    } else {
+        Write-Host "⊘ No API key entered - skipping" -ForegroundColor Yellow
+        $Skipped += "API key"
+    }
+
+    # Zero out the plaintext key from memory (best effort in managed runtime)
+    $ApiKey = $null
+    [System.GC]::Collect()
 } else {
-    Write-Host "⊘ No API key entered - skipping" -ForegroundColor Yellow
-    $Skipped += "API key (set ANTHROPIC_API_KEY manually)"
+    Write-Host "⊘ API key setup skipped (using browser auth instead)" -ForegroundColor Yellow
+    $Skipped += "API key (using browser auth)"
 }
-
-# Zero out the plaintext key from memory (best effort in managed runtime)
-$ApiKey = $null
-[System.GC]::Collect()
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 Write-Host ""
@@ -221,7 +194,7 @@ if ($Installed.Count -gt 0) {
 }
 
 if ($Skipped.Count -gt 0) {
-    Write-Host "Skipped (already present or unavailable):" -ForegroundColor Yellow
+    Write-Host "Skipped (already present or not needed):" -ForegroundColor Yellow
     foreach ($item in $Skipped) {
         Write-Host "  ⊘ $item" -ForegroundColor Yellow
     }
@@ -230,4 +203,5 @@ if ($Skipped.Count -gt 0) {
 Write-Host ""
 Write-Host "Claude Code is ready!" -ForegroundColor Green
 Write-Host "  Open a new terminal window and run: claude"
+Write-Host "  Your browser will open to log in with your Claude account."
 Write-Host ""
